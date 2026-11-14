@@ -1,37 +1,41 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-MAX_RETRIES=10
+TAG="${TAG:-latest}"
+CONTAINER_NAME="meting-api-ci-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-0}"
+PORT="${TEST_PORT:-3000}"
+METING_TOKEN="${METING_TOKEN:-ci-only-test-secret-0123456789abcdef0123456789}"
 
-# Try running the docker and get the output
-# then try getting /api
+cleanup() {
+    status=$?
+    if [[ $status -ne 0 ]]; then
+        docker logs "$CONTAINER_NAME" 2>/dev/null || true
+    fi
+    docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+    return "$status"
+}
+trap cleanup EXIT
 
-docker run -d -p 3000:3000 meting-api:${TAG}
+docker run -d \
+    --name "$CONTAINER_NAME" \
+    -e METING_TOKEN="$METING_TOKEN" \
+    -e OVERSEAS=1 \
+    -p "127.0.0.1:${PORT}:3000" \
+    "meting-api:${TAG}" >/dev/null || { echo "Failed to start Docker image"; exit 1; }
 
-if [[ $? -ne 0 ]]
-then
-    echo "Fail to run docker"
-    exit 1
-fi
-
-RETRY=1
-
-HTTP_CODE=$(curl -m 10 localhost:3000/api -w "%{http_code}" -o /dev/null)
-while [[ $? -ne 0 || "$HTTP_CODE" -ne 200 ]] && [[ $RETRY -lt $MAX_RETRIES ]]; do
-    echo "HTTP_CODE: ${HTTP_CODE}"
-    sleep 5
-    ((RETRY++))
-    echo "RETRY: ${RETRY}"
-    HTTP_CODE=$(curl -m 10 localhost:3000/api -w "%{http_code}" -o /dev/null)
+for attempt in $(seq 1 20); do
+    if curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${PORT}/test" >/dev/null; then
+        api_code=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 3 \
+            "http://127.0.0.1:${PORT}/api?server=netease&type=url&id=ci-health-check")
+        if [[ "$api_code" == "401" ]]; then
+            echo "Docker image /test and API authentication checks passed on attempt ${attempt}"
+            exit 0
+        fi
+        echo "Docker image API health check returned HTTP ${api_code}"
+    fi
+    sleep 2
 done
 
-if [[ $RETRY -gt $MAX_RETRIES ]]; then
-    echo "Unable to run, aborted"
-    exit 1
-else
-    if [[ $HTTP_CODE -ne 200 ]]; then
-        echo "Api error"
-        exit 1
-    else
-        echo "Successfully acquire /api, passing"
-    fi
-fi
+echo "Docker image did not become healthy"
+docker logs "$CONTAINER_NAME" || true
+exit 1

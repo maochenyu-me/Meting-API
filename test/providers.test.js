@@ -4,10 +4,13 @@ import api from '../src/service/api.js'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { test, expect } from 'vitest'
+import config from '../src/config.js'
+import { createAuthSignature } from '../src/utils/auth.js'
 
 const app = new Hono()
 app.use('*', cors())
 app.get('/api', api)
+config.METING_TOKEN = 'local-test-secret-change-before-deploy-0123456789'
 
 // test('examples match providers', () => {
 //     const p = new Providers()
@@ -35,7 +38,12 @@ test('test api', async () => {
         }
         for (const type in examples[provider_name]) {
 
-            const url = `http://localhost:3000/api?server=${provider_name}&type=${type}&id=${examples[provider_name][type].value}`
+            const id = examples[provider_name][type].value
+            const signature = ['url', 'pic', 'lrc'].includes(type)
+                ? await createAuthSignature(provider_name, type, id)
+                : ''
+            const auth = signature ? `&auth=${signature}` : ''
+            const url = `http://localhost:3000/api?server=${provider_name}&type=${type}&id=${id}${auth}`
             let res, count = 0
             while (count < 5) {
                 res = await app.request(url)

@@ -2,3 +2,13 @@ node_modules
 dist
 .vscode
 .vercel
+.git
+.github
+.workbuddy
+.ai-memory
+.env*
+**/.env*
+cookie/
+**/cookie/
+*.log
+npm-debug.log*

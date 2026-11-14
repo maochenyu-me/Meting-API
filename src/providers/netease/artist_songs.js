@@ -9,7 +9,7 @@ export const get_artist_songs = async (id, cookie) => {
 
     const res = await request('POST', `https://music.163.com/api/artist/top/song`, data, {
         crypto: 'weapi',
-        cookie: {},
+        cookie: cookie || '',
     })
 
     return map_song_list(res)

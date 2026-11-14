@@ -16,6 +16,7 @@ export const get_lyric = async (id, cookie) => {
         data,
         {
             crypto: 'api',
+            cookie: cookie || '',
         },
     )
 

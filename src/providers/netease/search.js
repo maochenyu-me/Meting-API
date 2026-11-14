@@ -13,7 +13,7 @@ export const get_search_songs = async (id, cookie) => {
 
     const res = await request('POST', `https://interface.music.163.com/eapi/cloudsearch`, data, {
         crypto: 'eapi',
-        cookie: {},
+        cookie: cookie || '',
         url: '/api/cloudsearch/pc'
     })
 

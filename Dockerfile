@@ -1,7 +1,9 @@
-FROM node:23-alpine3.20
+FROM node:22-alpine
 
 WORKDIR /app
-COPY . /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY . .
 
 ARG UID
 ARG GID
@@ -13,8 +15,6 @@ ENV PORT=${PORT:-3000}
 
 RUN addgroup -g ${GID} --system meting \
     && adduser -G meting --system -D -s /bin/sh -u ${UID} meting
-
-RUN npm i
 
 RUN chown -R meting:meting /app
 USER meting

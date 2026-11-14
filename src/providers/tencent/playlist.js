@@ -16,6 +16,7 @@ const get_playlist = async (id, cookie = '') => {
         Referer: 'https://y.qq.com/n/yqq/playlist',
     }
 
+    if (cookie) headers.Cookie = cookie
     const url = changeUrlQuery(data, 'http://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg')
 
     let result = await fetch(url, { headers });
@@ -26,7 +27,7 @@ const get_playlist = async (id, cookie = '') => {
     let jsonp
     if (config.OVERSEAS) {
         const ids = result.map(song => song.songmid)
-        jsonp = await get_song_url(ids.join(','))
+        jsonp = await get_song_url(ids.join(','), cookie)
     }
     const res = await Promise.all(result.map(async song => {
         let song_info = {

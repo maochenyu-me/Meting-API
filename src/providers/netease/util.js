@@ -4,6 +4,17 @@ import { customAlphabet } from 'nanoid/non-secure'
 
 const nanoid = customAlphabet('1234567890abcdef', 32)
 
+const parseCookie = (cookie) => Object.fromEntries(cookie.split(';').map(part => {
+    const separator = part.indexOf('=')
+    const key = (separator < 0 ? part : part.slice(0, separator)).trim()
+    const value = separator < 0 ? '' : part.slice(separator + 1).trim()
+    try {
+        return [decodeURIComponent(key), decodeURIComponent(value)]
+    } catch {
+        return [key, value]
+    }
+}).filter(([key]) => key))
+
 const chooseUserAgent = (ua = false) => {
     const userAgentList = {
         mobile: [
@@ -64,8 +75,13 @@ export const request = async (method, url, data = {}, options) => {
         headers['X-Forwarded-For'] = ip
     }
     // headers['X-Real-IP'] = '118.88.88.88'
-    if (typeof options.cookie === "undefined")
+    if (typeof options.cookie === "undefined" || (options.cookie === '' && options.crypto !== 'eapi'))
         options.cookie = {}
+
+    if (typeof options.cookie === 'string' && options.cookie) {
+        if (options.crypto === 'eapi') options.cookie = parseCookie(options.cookie)
+        else headers['Cookie'] = options.cookie
+    }
 
     if (typeof options.cookie === 'object') {
         options.cookie = {
@@ -90,7 +106,7 @@ export const request = async (method, url, data = {}, options) => {
             .join('; ')
     } else if (options.cookie) {
         headers['Cookie'] = options.cookie
-    } else {
+    } else if (options.crypto === 'eapi') {
         headers['Cookie'] = '__remember_me=true; NMTID=xxx'
     }
 
@@ -110,7 +126,7 @@ export const request = async (method, url, data = {}, options) => {
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36'
         url = 'https://music.163.com/api/linux/forward'
     } else if (options.crypto === 'eapi') {
-        const cookie = options.cookie || {}
+        const cookie = typeof options.cookie === 'object' ? options.cookie : {}
         const csrfToken = cookie['__csrf'] || ''
         const header = {
             osver: cookie.osver, //系统版本

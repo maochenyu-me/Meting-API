@@ -19,6 +19,7 @@ const get_lyric = async (songmid, cookie = '') => {
     const headers = {
         Referer: 'https://y.qq.com',
     }
+    if (cookie) headers.Cookie = cookie
 
     const url = changeUrlQuery(data, 'http://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg')
 

@@ -65,7 +65,7 @@ export const get_song_url = async (id, cookie = '') => {
 
     const url = changeUrlQuery(params, 'https://u.y.qq.com/cgi-bin/musicu.fcg')
 
-    let result = await fetch(url);
+    let result = await fetch(url, cookie ? { headers: { Cookie: cookie } } : undefined);
 
     result = await result.json()
     // console.log(result)
@@ -98,7 +98,7 @@ export const get_song_info = async (id, cookie = '') => {
 
     const url = changeUrlQuery(data, 'http://u.y.qq.com/cgi-bin/musicu.fcg');
 
-    let result = await fetch(url);
+    let result = await fetch(url, cookie ? { headers: { Cookie: cookie } } : undefined);
 
     result = await result.json()
 
@@ -108,7 +108,7 @@ export const get_song_info = async (id, cookie = '') => {
         author: result.track_info.singer.reduce((i, v) => ((i ? i + " / " : i) + v.name), ''),
         title: result.track_info.name,
         pic: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${result.track_info.album.mid}.jpg`,
-        url: config.OVERSEAS ? await get_song_url(id) : id,
+        url: config.OVERSEAS ? await get_song_url(id, cookie) : id,
         lrc: id,
         songmid: id,
     }
