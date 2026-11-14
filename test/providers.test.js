@@ -29,8 +29,9 @@ test('test provider support_type', () => {
 })
 
 const YT_API = globalThis?.Deno?.env?.get("YT_API") || globalThis?.process?.env?.YT_API
+const runLiveTests = globalThis?.process?.env?.METING_LIVE_TESTS === '1'
 
-test('test api', async () => {
+test.skipIf(!runLiveTests)('test api', async () => {
     for (const provider_name in examples) {
         if (["ytmusic", "spotify"].includes(provider_name) && !YT_API) {
             console.log("external api not found, skipping...")
